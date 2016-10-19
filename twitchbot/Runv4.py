@@ -16,64 +16,49 @@ import random
 # Actually joins the rooms
 s = openSocket()
 
-#dictionary for user's and the funds they have
-userFunds = dict()
+#dictionary for options and the people who voted for it
+votes = dict()
+#keeps track of if a user has voted
+usermap = dict()
 
-#dictionary for user's and the tickets they currently have active
-userTickets = dict()
+restartPoll():
+	votes = dict()
+	usermap = dict()
 
-winnings = 30;
+#gets the ultimate winner
+def getWinner():
+	winner = ""
+	maxVotes = 0
+	for option in votes:
+		if(len(votes[option])>maxVotes):
+			winner = maxVotes
+			maxVotes = len(votes[option])
+	return winner
 
-#check the ticket stash for winners
-def checkTickets():
-	threading.Timer(60, checkTickets).start()
-	global winnings;
-	global userFunds;
-	global userTickets;
+def vote(option, user):
+	if(not votes.has_key(option)):
+		response = "Sorry " + "@" + user + ": that is not a valid vote option"
+		sendMessage(s, response, 0);
 
-	ticket =  [random.randint(0, 20), random.randint(0, 20), random.randint(0, 20), random.randint(0, 20), random.randint(0, 20), random.randint(0, 20)]
-	sendMessage(s, "The ticket " + str(ticket) + " has been drawn!", 0);
-	for user in userTickets:
-		winnings = 0;
-		matchCount = 0;
-		for userTicket in userTickets[user]:
-			for idx, number in enumerate(userTicket):
-				if(idx < 6):
-					if number == ticket[idx]:
-						matchCount += 1
-			if(matchCount == 1):
-				winnings = max(winnings, 1)
-			if(matchCount == 2):
-				winnings = max(winnings, 5)
-			if(matchCount == 3):
-				winnings = max(winnings, 10)
-			if(matchCount == 4):
-				winnings = max(winnings, 30)
-			if(matchCount == 5):
-				winnings = max(winnings, 100)
-			if(matchCount == 6):
-				winnings = max(winnings, 200)
-		userTickets[user] = []
-		if(matchCount > 0):
-			time.sleep(1.0)
-			sendMessage(s, "@" + user + " Congratulations! You have gained " + str(winnings) + " tickets", 0);
-			userFunds[user] += winnings;
-	time.sleep(1.0)
-	sendMessage(s, "The drawing has concluded, the ticket pool has been cleaned for the next drawing", 0);
+	if(votes[option].contains(user)):
+		return
+	else:
+		if(usermap.has_key(user)):
+			oldOption = usermap[user]
+			votes[oldOption].remove(user)
+
+		votes[option].append(user)
+		usermap[user] = option
 
 def updateMessage():
 	threading.Timer(30, checkTickets).start()
-	response = "A drawing is currently under way! Register to get tickets! Type !help for more info. "
-	response += "This stream does NOT encourage players to gamble recklessly"
+	response = "A poll is currently underway! Type !vote to have your voice heard!"
 	sendMessage(s, response, 0);
-
-checkTickets()
+	
 updateMessage()
-
 
 ### joinRoom(s)
 readbuffer = ""
-
 
 id = 0
 
@@ -114,83 +99,10 @@ while time.time() < starttime:
 						ab = csv.writer(fp, delimiter=',')
 						data = [id, channelname, user, datetime.now(), message.strip(), owner, mod, sub, turbo];
 						ab.writerow(data)
-					if(message.startswith("!register")):
-						if(userFunds.has_key(user)):
-							sendMessage(s, "@" + user + " You have already registered for the drawing", 0);
-							continue
-
-						if(not userFunds.has_key(user)):
-							userFunds[user] = 10;
-						if(not userTickets.has_key(user)):
-							userTickets[user] = []
-
-						response = user + " has registered for the drawings!"
-						sendMessage(s, response, 0);
-
-					if(message.startswith("!help")):
-						response = "@" + user + " To buy a ticket, type in !ticket followed by the player, followed by 6 numbers between 0 and 99. "
-						response += "For example, [!ticket 12 34 56 78 90 99] will purchase a ticket with numbers [12 34 56 78 90 99] "
-						response += "You get 10 tickets a day. Win drawings to earn more. Check your tickets with !myTickets"
-						sendMessage(s, response, 0);
-
-					if(message.startswith("!myTickets") or message.startswith("!mytickets")):
-						if(not userFunds.has_key(user)):
-							sendMessage(s, "@" + user + " Please register before buying tickets", 0);
-							continue
-
-						response = "@" + user + " you have " + str(userFunds[user]) + " tickets remaining. "
-						if(len(userTickets[user]) > 0):
-							response += "Your active tickets are: "
-							for ticketNumber in userTickets[user]:
-								response +=  str(ticketNumber)
-						sendMessage(s, response, 0);
-
-					if(message.startswith("!ticket")):
-						if(not userFunds.has_key(user)):
-							sendMessage(s, "@" + user + " Please register before buying tickets", 0);
-						else:
-							if (not len(message.split(" ")) == 7):
-								sendMessage(s, "@" + user + " Please format your request properly, type !help", 0);
-								continue
-
-							ticketNums = message.split(" ")[1:];
-							ticketNumber = ""
-							for num in ticketNums:
-								ticketNumber += num.rstrip() + " "
-							ticketNumber = ticketNumber.rstrip();
+					if(message.startswith("!vote")):
+						option = message.split(" ")[1:]
+						vote(option, user)
 							
-							if(not len(filter(lambda x: not x.rstrip().isdigit(), ticketNums)) == 0):
-								response = "@" + user + " the numbers you have entered is not valid"
-								sendMessage(s, response, 0);
-								continue
-							
-							if(not len(filter(lambda x: int(x.rstrip()) > 99 or int(x.rstrip()) < 0, ticketNums)) == 0):
-								response = "@" + user + " a number you entered was out of the accepted range";
-								sendMessage(s, response, 0);
-								continue
-							
-
-							if(userFunds[user] <= 0):
-								response = "@" + user + " you lack the funds to purchase tickets"
-								sendMessage(s, response, 0);
-								continue
-
-							if(ticketNumber in userTickets[user]):
-								response = "@" + user + " you have already purchased that ticket"
-								sendMessage(s, response, 0);
-								continue
-
-							ticketNumber = []
-							for num in ticketNums:
-								ticketNumber.append(int(num))
-							
-							userFunds[user] -= 1
-							if(not userTickets.has_key(user)):
-								userTickets[user] = [];
-							userTickets[user].append(ticketNumber)
-
-							response = "@" + user + " You have just purchased ticket " + str(ticketNumber)
-							sendMessage(s, response, 0);
 
 				# Survives if there's a message problem
 				except Exception as e:
