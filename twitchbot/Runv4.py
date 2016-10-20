@@ -23,7 +23,9 @@ votes = dict()
 #keeps track of if a user has voted
 usermap = dict()
 
-for arg in sys.argv[1:]:
+timer = float(sys.argv[1])
+
+for arg in sys.argv[2:]:
 	votes[arg] = []
 
 def restartPoll():
@@ -74,7 +76,7 @@ readbuffer = ""
 id = 0
 
 # Sets how long the scraper will run for (in seconds)
-starttime = time.time() + 100000
+starttime = time.time() + timer
 
 # Runs until time is up
 while time.time() < starttime:

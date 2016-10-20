@@ -1,3 +1,10 @@
+import os
+import signal
+import subprocess
+from Tkinter import *
+
+votes = dict()
+
 def setTimer():
 	timer = int(timerStr.get())
 
@@ -9,18 +16,24 @@ def addOption():
 		options.set(newOpt)
 		root.update()
 
-def starReading():
+def startReading():
+	cmd = 'runv4.py %d' % timer
+	for key in votes:
+		cmd += ' %s' % key
+	pro = subprocess.Popen(cmd, stdout=subprocess.PIPE, 
+                       shell=True) 
+	cmd = 'VoteTracker.py'
+	pro = subprocess.Popen(cmd, stdout=subprocess.PIPE, 
+                       shell=True) 
+	quit()
 	
-	
-updateMessage()
-
 # Initialize GUI
 root = Tk()
 canvas = Canvas(root, width=550, height=400)
 canvas.pack()
 
 # default timer value
-timer = 60
+timer = 10
 timeLeft = StringVar()
 options = StringVar()
 
