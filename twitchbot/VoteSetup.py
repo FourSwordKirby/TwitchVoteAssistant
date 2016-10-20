@@ -17,12 +17,13 @@ def addOption():
 		root.update()
 
 def startReading():
-	cmd = 'runv4.py %d' % timer
+	cmd = 'python runv4.py %d' % timer
 	for key in votes:
 		cmd += ' %s' % key
 	pro = subprocess.Popen(cmd, stdout=subprocess.PIPE, 
                        shell=True) 
-	cmd = 'VoteTracker.py'
+	print cmd
+	cmd = 'python VoteTracker.py'
 	pro = subprocess.Popen(cmd, stdout=subprocess.PIPE, 
                        shell=True) 
 	quit()
@@ -41,7 +42,7 @@ tip1Label = Label(root,text='Your current options are:\n').pack()
 
 optionsLabel = Label(root,textvariable=options).pack()
 
-tip2Label = Label(root,text='Cast your vote as "!vote [your_vote]"').pack()
+tip2Label = Label(root,text='Cast your vote by typing the option you want').pack()
 
 timerStr = StringVar()
 timerLabel = Label(root,text='Set Vote Timer').pack()

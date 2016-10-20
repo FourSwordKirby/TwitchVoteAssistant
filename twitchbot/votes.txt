@@ -1,3 +1,2 @@
-hi: 0
-hello: 0
-whatsup: 1
+Vegeta: 10
+Harambe: 20

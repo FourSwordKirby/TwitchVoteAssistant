@@ -31,7 +31,7 @@ for entry in lines:
 	newEntry = StringVar()
 	newEntry.set(entry)
 	optionInfo.append(newEntry)
-	Label(root,textvariable=optionInfo[i]).pack()
+	Label(root,textvariable=optionInfo[i],font=("Courier", 44)).pack()
 	i+=1
 timerFired(canvas)
 

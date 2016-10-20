@@ -28,6 +28,11 @@ timer = float(sys.argv[1])
 for arg in sys.argv[2:]:
 	votes[arg] = []
 
+newFile = open("votes.txt", "w")
+for option in votes:
+	newFile.write(option + ": " + str(len(votes[option])) + "\n")
+newFile.close()
+
 def restartPoll():
 	votes = dict()
 	usermap = dict()
