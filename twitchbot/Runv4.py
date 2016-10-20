@@ -9,6 +9,7 @@ from Socketv2 import openSocket, sendMessage
 from Settingsv2 import HOST, PORT, PASS, IDENT
 from datetime import datetime
 
+from Tkinter import *
 import os
 import sys
 import threading
@@ -138,7 +139,6 @@ while time.time() < starttime:
 			# Parses ban messages and writes them to the file
 			elif "CLEARCHAT" in line:
 				try:
-			
 					# Gets banned user's name and channel name from a line
 					user = getBannedUser(line)
 					channelname = getBannedChannelname(line)
@@ -150,10 +150,9 @@ while time.time() < starttime:
 						ab = csv.writer(fp, delimiter=',');
 						data = [id, channelname, user, datetime.now(), "oghma.ban"];
 						ab.writerow(data);
-			
+		
 				# Survives if there's a ban message problem
 				except Exception as e:
 					print "BAN PROBLEM"
 					print line
 					print e
-				
