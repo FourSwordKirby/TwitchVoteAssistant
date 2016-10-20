@@ -11,6 +11,7 @@ from datetime import datetime
 
 from Tkinter import *
 import os
+import sys
 import threading
 import random
 
@@ -21,6 +22,9 @@ s = openSocket()
 votes = dict()
 #keeps track of if a user has voted
 usermap = dict()
+
+for arg in sys.argv[1:]:
+	votes[arg] = []
 
 def restartPoll():
 	votes = dict()
@@ -39,9 +43,9 @@ def getWinner():
 def vote(option, user):
 	if(not votes.has_key(option)):
 		response = "Sorry " + "@" + user + ": that is not a valid vote option"
-		sendMessage(s, response, 0);
+		sendMessage(s, response, 0)
 
-	if(votes[option].contains(user)):
+	if(user in votes[option]):
 		return
 	else:
 		if(usermap.has_key(user)):
@@ -50,145 +54,106 @@ def vote(option, user):
 
 		votes[option].append(user)
 		usermap[user] = option
+	
+	newFile = open("votes.txt", "w")
+	for option in votes:
+		newFile.write(option + ": " + str(len(votes[option])) + "\n")
+	newFile.close()
 
 def updateMessage():
+	threading.Timer(30, updateMessage).start()
 	response = "A poll is currently underway! Type !vote to have your voice heard!"
-	sendMessage(s, response, 0);
 
-def setTimer():
-	timer = int(timerStr.get())
-
-def addOption():
-	global options
-	if(optionStr.get() != '' and not votes.has_key(optionStr.get())):
-		votes[optionStr.get()] = []
-		newOpt = options.get() + optionStr.get() + '\n'
-		options.set(newOpt)
-		root.update()
-
-def readVotes():
-	root.quit()
-	### joinRoom(s)
-	readbuffer = ""
-	id = 0
-	starttime = time.time() + timer
-	while time.time() < starttime:
-			# Pulls a chunk off the buffer, puts it in "temp"
-			readbuffer = readbuffer + s.recv(1024)
-			readbuffer = temp.pop()
-
-
-			# Iterates through the chunk
-			for line in temp:
-				print line
-				id = id + 1
-			
-				# Parses lines and writes them to the file
-				if "PRIVMSG" in line:
-					try:
-
-						# Gets user, message, and channel from a line
-						user = getUser(line)
-						message = getMessage(line)
-						channelname = getChannelname(line)
-						owner = getOwner(line)
-						mod = getMod(line)
-						sub = getSub(line)
-						turbo = getTurbo(line)
-			
-						if owner == 1:
-							mod = 1
-			
-						# Writes Message ID, channel, user, date/time, and cleaned message to file
-						with open('outputlog.csv', 'ab') as fp:
-							ab = csv.writer(fp, delimiter=',')
-							data = [id, channelname, user, datetime.now(), message.strip(), owner, mod, sub, turbo];
-							ab.writerow(data)
-						if(message.startswith("!vote")):
-							option = message.split(" ")[1:]
-							vote(option, user)
-								
-
-					# Survives if there's a message problem
-					except Exception as e:
-						print "MESSAGE PROBLEM"
-						print line
-						print e
-			
-				# Responds to PINGs from twitch so it doesn't get disconnected
-				elif "PING" in line:
-					try:
-						separate = line.split(":", 2)
-						s.send("PONG %s\r\n" % separate[1])
-						print ("PONG %s\r\n" % separate[1])
-						print "I PONGED BACK"
-					
-					# Survives if there's a ping problem
-					except:
-						print "PING problem PING problem PING problem"
-						print line
-			
-				# Parses ban messages and writes them to the file
-				elif "CLEARCHAT" in line:
-					try:
-				
-						# Gets banned user's name and channel name from a line
-						user = getBannedUser(line)
-						channelname = getBannedChannelname(line)
-					
-						# Writes Message ID, channel, user, date/time, and an indicator that it was a ban message.
-						#	I use "oghma.ban" because the bot's name is oghma, and I figure it's not a phrase that's
-						#	likely to show up in a message so it's easy to search for.
-						with open('outputlog.csv', 'ab') as fp:
-							ab = csv.writer(fp, delimiter=',');
-							data = [id, channelname, user, datetime.now(), "oghma.ban"];
-							ab.writerow(data);
-				
-					# Survives if there's a ban message problem
-					except Exception as e:
-						print "BAN PROBLEM"
-						print line
-						print e
+	#sendMessage(s, response, 0);
 	
 updateMessage()
 
-# Initialize GUI
-root = Tk()
-canvas = Canvas(root, width=550, height=400)
-canvas.pack()
+### joinRoom(s)
+readbuffer = ""
 
-# default timer value
-timer = 60
-timeLeft = StringVar()
-options = StringVar()
+id = 0
 
-tip1Label = Label(root,text='Your current options are:\n').pack()
+# Sets how long the scraper will run for (in seconds)
+starttime = time.time() + 100000
 
-optionsLabel = Label(root,textvariable=options).pack()
+# Runs until time is up
+while time.time() < starttime:
+		# Pulls a chunk off the buffer, puts it in "temp"
+		readbuffer = readbuffer + s.recv(1024)
+		temp = string.split(readbuffer, "\n")
+		readbuffer = temp.pop()
 
-tip2Label = Label(root,text='Cast your vote as "!vote [your_vote]"').pack()
 
-timerStr = StringVar()
-timerLabel = Label(root,text='Set Vote Timer').pack()
-timerEntry = Entry(root,textvariable=timerStr).pack()
-timerButton = Button(root,text='Enter',command = setTimer,fg='black',bg='white').pack()
+		# Iterates through the chunk
+		for line in temp:
+			print line
+			id = id + 1
+		
+			# Parses lines and writes them to the file
+			if "PRIVMSG" in line:
+				try:
+					# Gets user, message, and channel from a line
+					user = getUser(line)
+					message = getMessage(line)
+					channelname = getChannelname(line)
+					owner = getOwner(line)
+					mod = getMod(line)
+					sub = getSub(line)
+					turbo = getTurbo(line)
+		
+					if owner == 1:
+						mod = 1
+		
+					# Writes Message ID, channel, user, date/time, and cleaned message to file
+					with open('outputlog.csv', 'ab') as fp:
+						ab = csv.writer(fp, delimiter=',')
+						data = [id, channelname, user, datetime.now(), message.strip(), owner, mod, sub, turbo];
+						ab.writerow(data)
+					for option in votes:
+						if(message.startswith(option)):
+							vote(option, user)
+					#this lets people vote by just saying the word that they want to vote for	
+					#if(message.startswith("!vote")):
+					#	option = message.split(" ")[1:]
+					#	vote(option, user)
+							
 
-optionStr = StringVar()
-optionLabel = Label(root,text='Enter Vote Option').pack()
-optionEntry = Entry(root,textvariable=optionStr).pack()
-optionButton = Button(root,text='Enter',command = addOption,fg='black',bg='white').pack()
-
-startButton = Button(root,text='Start',command = readVotes,fg='black',bg='white').pack()
-canvas.destroy()
-root.mainloop()
-"""
-	tip1Label.destroy()
-	optionsLabel.destroy()
-	tip2Label.destroy()
-	timerLabel.destroy()
-	timerEntry.destroy()
-	timerButton.destroy()
-	optionLabel.destroy()
-	optionEntry.destroy()
-	optionButton.destroy()
-"""
+				# Survives if there's a message problem
+				except Exception as e:
+					print "MESSAGE PROBLEM"
+					print line
+					print e
+		
+			# Responds to PINGs from twitch so it doesn't get disconnected
+			elif "PING" in line:
+				try:
+					separate = line.split(":", 2)
+					s.send("PONG %s\r\n" % separate[1])
+					print ("PONG %s\r\n" % separate[1])
+					print "I PONGED BACK"
+				
+				# Survives if there's a ping problem
+				except:
+					print "PING problem PING problem PING problem"
+					print line
+		
+			# Parses ban messages and writes them to the file
+			elif "CLEARCHAT" in line:
+				try:
+					# Gets banned user's name and channel name from a line
+					user = getBannedUser(line)
+					channelname = getBannedChannelname(line)
+				
+					# Writes Message ID, channel, user, date/time, and an indicator that it was a ban message.
+					#	I use "oghma.ban" because the bot's name is oghma, and I figure it's not a phrase that's
+					#	likely to show up in a message so it's easy to search for.
+					with open('outputlog.csv', 'ab') as fp:
+						ab = csv.writer(fp, delimiter=',');
+						data = [id, channelname, user, datetime.now(), "oghma.ban"];
+						ab.writerow(data);
+		
+				# Survives if there's a ban message problem
+				except Exception as e:
+					print "BAN PROBLEM"
+					print line
+					print e
