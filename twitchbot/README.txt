@@ -1,0 +1,1 @@
+Start the vote setup process by running VoteSetup.py
