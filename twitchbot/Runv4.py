@@ -10,6 +10,7 @@ from Settingsv2 import HOST, PORT, PASS, IDENT
 from datetime import datetime
 
 import os
+import sys
 import threading
 import random
 
@@ -21,7 +22,10 @@ votes = dict()
 #keeps track of if a user has voted
 usermap = dict()
 
-restartPoll():
+for arg in sys.argv[1:]:
+	votes[arg] = []
+
+def restartPoll():
 	votes = dict()
 	usermap = dict()
 
@@ -38,9 +42,9 @@ def getWinner():
 def vote(option, user):
 	if(not votes.has_key(option)):
 		response = "Sorry " + "@" + user + ": that is not a valid vote option"
-		sendMessage(s, response, 0);
+		sendMessage(s, response, 0)
 
-	if(votes[option].contains(user)):
+	if(user in votes[option]):
 		return
 	else:
 		if(usermap.has_key(user)):
@@ -49,11 +53,16 @@ def vote(option, user):
 
 		votes[option].append(user)
 		usermap[user] = option
+	
+	newFile = open("votes.txt", "w")
+	for option in votes:
+		newFile.write(option + ": " + str(len(votes[option])) + "\n")
+	newFile.close()
 
 def updateMessage():
-	threading.Timer(30, checkTickets).start()
+	threading.Timer(30, updateMessage).start()
 	response = "A poll is currently underway! Type !vote to have your voice heard!"
-	sendMessage(s, response, 0);
+	#sendMessage(s, response, 0);
 	
 updateMessage()
 
@@ -81,7 +90,6 @@ while time.time() < starttime:
 			# Parses lines and writes them to the file
 			if "PRIVMSG" in line:
 				try:
-
 					# Gets user, message, and channel from a line
 					user = getUser(line)
 					message = getMessage(line)
@@ -99,9 +107,13 @@ while time.time() < starttime:
 						ab = csv.writer(fp, delimiter=',')
 						data = [id, channelname, user, datetime.now(), message.strip(), owner, mod, sub, turbo];
 						ab.writerow(data)
-					if(message.startswith("!vote")):
-						option = message.split(" ")[1:]
-						vote(option, user)
+					for option in votes:
+						if(message.startswith(option)):
+							vote(option, user)
+					#this lets people vote by just saying the word that they want to vote for	
+					#if(message.startswith("!vote")):
+					#	option = message.split(" ")[1:]
+					#	vote(option, user)
 							
 
 				# Survives if there's a message problem
